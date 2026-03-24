@@ -1,0 +1,36 @@
+services:
+  app:
+    build: .
+    container_name: spring-backend
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATASOURCE_URL=${DB_URL}
+      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+    depends_on:
+      oracle-database:
+        condition: service_healthy
+    restart: on-failure
+
+  oracle-database:
+    image: container-registry.oracle.com/database/free:latest
+    container_name: oracle-23ai
+    ports:
+      - "1521:1521"
+    environment:
+      - ORACLE_PWD=${DB_PASSWORD}
+    volumes:
+      - db_data:/opt/oracle/oradata
+    healthcheck:
+      test: ["CMD-SHELL", "echo 'SELECT 1 FROM DUAL;' | sqlplus -L system/${DB_PASSWORD}@//localhost:1521/FREEPDB1 | grep -q '1'"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 120s
+
+volumes:
+  db_data:
