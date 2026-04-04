@@ -1,44 +1,40 @@
 package com.minh.data_masking.controller;
 
-import com.minh.data_masking.dto.auth.JwtResponse;
-import com.minh.data_masking.dto.auth.LoginRequest;
-import com.minh.data_masking.dto.auth.MessageResponse;
-import com.minh.data_masking.dto.auth.RegisterRequest;
+import com.minh.data_masking.dto.auth.*;
 import com.minh.data_masking.service.AuthService;
+import com.minh.data_masking.util.RsaService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-/**
- * Controller for public Authentication endpoints.
- * Includes register and login.
- */
+import java.util.Map; // Khả năng cao bạn đang thiếu dòng import này lúc nãy
+
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
     private final AuthService authService;
+    private final RsaService rsaService;
 
     /**
-     * POST /api/auth/register
-     * Registers a new user. Role is automatically set to ROLE_USER.
+     * API Cấp phát Khóa Công khai RSA (Code Chay)
+     * Trả về trực tiếp 2 số N và E dạng Hexa cho ReactJS
      */
-    @PostMapping("/register")
-    public ResponseEntity<MessageResponse> register(@Valid @RequestBody RegisterRequest request) {
-        return ResponseEntity.ok(authService.register(request));
+    @GetMapping("/public-key")
+    public ResponseEntity<Map<String, String>> getPublicKey() {
+        return ResponseEntity.ok(rsaService.getRawPublicKey());
     }
 
-    /**
-     * POST /api/auth/login
-     * Authenticates user using email and password, and returns a JWT response.
-     */
+    @PostMapping("/register")
+    public ResponseEntity<MessageResponse> register(@Valid @RequestBody EncryptedRegisterRequest request) throws Exception {
+        // Gọi thẳng vào hàm xử lý mã hóa lai thay vì hàm gốc
+        return ResponseEntity.ok(authService.registerSecure(request));
+    }
+
     @PostMapping("/login")
-    public ResponseEntity<JwtResponse> login(@Valid @RequestBody LoginRequest request) {
-        return ResponseEntity.ok(authService.login(request));
+    public ResponseEntity<JwtResponse> login(@Valid @RequestBody EncryptedLoginRequest request) throws Exception {
+        return ResponseEntity.ok(authService.loginSecure(request));
     }
 }
